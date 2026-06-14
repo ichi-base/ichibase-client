@@ -1,0 +1,55 @@
+{
+  "name": "@ichibase/client",
+  "version": "0.1.0",
+  "description": "Official client-side SDK for ichibase — Postgres, Mongo, Auth, Storage & Realtime from the browser, React Native, Deno, Node & Bun. Anon key only.",
+  "type": "module",
+  "license": "MIT",
+  "author": "ichibase",
+  "homepage": "https://ichibase.com/docs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AliKales/ichibase-client.git"
+  },
+  "keywords": [
+    "ichibase",
+    "baas",
+    "postgres",
+    "mongodb",
+    "auth",
+    "storage",
+    "realtime",
+    "supabase-alternative",
+    "react-native"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

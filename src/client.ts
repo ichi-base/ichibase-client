@@ -6,14 +6,13 @@
 //   await ichi.auth.login({ email, password });   // now acts AS the user
 //   ichi.realtime.subscribe({ kind: 'postgres', table: 'posts' }, console.log);
 //
-// One config + one session shared across postgres / auth / storage / mongo /
+// One config + one session shared across postgres / auth / mongo /
 // realtime. After login, data calls automatically use the user's access token
 // so your RLS / policies / realtime rules see them; logged out, they use the
 // publishable anon key (role = anon).
 
 import type { IchibaseConfig, Result } from './core.js';
 import { Postgrest } from './postgrest.js';
-import { Storage } from './storage.js';
 import { Mongo } from './mongo.js';
 import {
   Auth,
@@ -194,10 +193,10 @@ export class IchibaseClient {
   }
 
   // ── Storage ────────────────────────────────────────────────────────
-  /** Storage client (signed upload/read URLs, list, move, delete). */
-  get storage(): Storage {
-    return new Storage(this.url, this.bearer(), this.fetchFn);
-  }
+  // Intentionally NOT exposed on the client. Storage tokens / presigned
+  // upload URLs are minted server-side by the project owner (Edge Function +
+  // service key) and handed to users — never minted from a client. See the
+  // Storage docs. Public files are read directly from cdn.ichibase.net.
 
   // ── Mongo ──────────────────────────────────────────────────────────
   /** Mongo data client (apikey = anon; user token attached when signed in). */

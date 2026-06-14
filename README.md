@@ -1,7 +1,7 @@
 # @ichibase/client
 
 The official **client-side** SDK for [ichibase](https://ichibase.com) — Postgres,
-MongoDB, Auth, Storage, and Realtime from a single client. Built for the browser,
+MongoDB, Auth, and Realtime from a single client. Built for the browser,
 React Native, Deno, Node 22+, and Bun. **Anon key only** — depends solely on
 global `fetch` + `WebSocket`, zero runtime dependencies.
 
@@ -77,11 +77,11 @@ await ichi.auth.loadSession();
 
 ### Storage
 
-```ts
-// Mint a signed URL to read a private file
-const { data } = await ichi.storage.getUrl({ bucket: 'avatars', path: '/me.png' });
-// Public bucket files: https://cdn.ichibase.net/<project>/public/<path>
-```
+Storage is **not** on the client. Read/upload tokens are minted server-side by
+the project owner (an Edge Function using the service key) and handed to your
+app. Public files are read directly from
+`https://cdn.ichibase.net/<project>/public/<path>`. See the
+[Storage docs](https://ichibase.com/docs/storage).
 
 ### Mongo
 

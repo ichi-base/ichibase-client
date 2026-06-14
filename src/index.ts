@@ -41,7 +41,6 @@ export type {
   UpdatedUser,
   SessionInfo,
 } from './auth.js';
-export { Storage, StorageBucket } from './storage.js';
 export { Mongo, MongoCollection } from './mongo.js';
 
 // Shared result/error/config types.

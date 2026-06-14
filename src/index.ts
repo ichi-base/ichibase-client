@@ -42,6 +42,8 @@ export type {
   SessionInfo,
 } from './auth.js';
 export { Mongo, MongoCollection } from './mongo.js';
+export { Functions } from './functions.js';
+export type { InvokeOptions } from './functions.js';
 
 // Shared result/error/config types.
 export type { Result, IchibaseError, IchibaseConfig } from './core.js';

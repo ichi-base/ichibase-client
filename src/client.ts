@@ -14,6 +14,7 @@
 import type { IchibaseConfig, Result } from './core.js';
 import { Postgrest } from './postgrest.js';
 import { Mongo } from './mongo.js';
+import { Functions } from './functions.js';
 import {
   Auth,
   type LoginResult,
@@ -203,6 +204,13 @@ export class IchibaseClient {
   get mongo(): Mongo {
     const m = new Mongo(this.url, this.anonKey, this.fetchFn);
     return this.session ? m.asUser(this.session.access_token) : m;
+  }
+
+  // ── Edge Functions ─────────────────────────────────────────────────
+  /** Invoke your deployed Edge Functions: `ichi.functions.invoke('name', { body })`. */
+  get functions(): Functions {
+    const f = new Functions(this.url, this.anonKey, this.fetchFn);
+    return this.session ? f.asUser(this.session.access_token) : f;
   }
 
   // ── Realtime ───────────────────────────────────────────────────────

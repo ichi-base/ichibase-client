@@ -250,7 +250,15 @@ export class QueryBuilder<T, R = T[]> implements PromiseLike<Result<R>> {
    * Defaults to '*'.
    */
   select(cols = '*'): this {
-    this.state.method = this.state.method ?? 'GET';
+    // After a write (insert/update/upsert/delete) `.select()` asks for the
+    // affected row(s) back (Prefer: return=representation). On its own it's a
+    // plain read. Writes otherwise return nothing (return=minimal) so an
+    // RLS-protected table doesn't also require a SELECT policy just to insert.
+    if (this.state.method && this.state.method !== 'GET' && this.state.method !== 'HEAD') {
+      this.state.returnRepresentation = true;
+    } else {
+      this.state.method = this.state.method ?? 'GET';
+    }
     this.state.filters.push(`select=${encodeURIComponent(cols)}`);
     return this;
   }
@@ -380,7 +388,12 @@ export class QueryBuilder<T, R = T[]> implements PromiseLike<Result<R>> {
     else if (this.state.acceptCsv) h['Accept'] = 'text/csv';
 
     const prefer: string[] = [];
-    if (this.state.returnRepresentation) prefer.push('return=representation');
+    const method = this.state.method ?? 'GET';
+    const isWrite = method === 'POST' || method === 'PATCH' || method === 'DELETE';
+    // Writes return nothing unless the caller chained .select()/.returning();
+    // be explicit so behaviour doesn't depend on the PostgREST default.
+    if (isWrite) prefer.push(this.state.returnRepresentation ? 'return=representation' : 'return=minimal');
+    else if (this.state.returnRepresentation) prefer.push('return=representation');
     if (this.state.countMode) prefer.push(`count=${this.state.countMode}`);
     if (this.state.upsertResolution) prefer.push(`resolution=${this.state.upsertResolution}`);
     if (prefer.length) h['Prefer'] = prefer.join(',');

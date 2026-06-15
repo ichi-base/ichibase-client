@@ -146,6 +146,7 @@ export class IchibaseClient {
   private listeners = new Set<(e: AuthEvent, s: Session | null) => void>();
   private _realtime: RealtimeClient | null = null;
   private wsImpl?: typeof WebSocket;
+  private refreshing: Promise<boolean> | null = null; // single-flight token refresh
 
   constructor(url: string, anonKey: string, opts: ClientOptions = {}) {
     if (!url) throw new Error('ichibase: url is required');
@@ -158,13 +159,17 @@ export class IchibaseClient {
     }
     this.url = url.replace(/\/$/, '');
     this.anonKey = anonKey;
-    this.fetchFn = opts.fetch ?? globalThis.fetch.bind(globalThis);
+    const baseFetch = opts.fetch ?? globalThis.fetch.bind(globalThis);
+    // Data calls go through a wrapper that transparently refreshes an expired
+    // JWT + retries once on a 401, instead of surfacing the error.
+    this.fetchFn = this.wrapFetch(baseFetch);
     // Persistence is automatic: localStorage in the browser, in-memory
     // elsewhere. Pass `storage` to override (e.g. AsyncStorage on RN).
     this.sessionStore = opts.storage ?? defaultStorage();
     this.storageKey = opts.storageKey ?? DEFAULT_STORAGE_KEY;
     this.wsImpl = opts.WebSocketImpl;
-    this.auth = new SessionAuth(new Auth(this.url, this.anonKey, this.fetchFn), this);
+    // Auth uses the RAW fetch — its /refresh must not recurse through the wrapper.
+    this.auth = new SessionAuth(new Auth(this.url, this.anonKey, baseFetch), this);
 
     // Auto-hydrate from a SYNCHRONOUS adapter (e.g. localStorage). Async
     // adapters (AsyncStorage) require an explicit `await auth.loadSession()`.
@@ -179,6 +184,49 @@ export class IchibaseClient {
   /** The bearer to send on data-plane calls: the user token if signed in, else the anon key. */
   private bearer(): string {
     return this.session?.access_token ?? this.anonKey;
+  }
+
+  /**
+   * Wrap a fetch so a 401 on a request that carried the signed-in user's access
+   * token triggers a single token refresh + one retry — the SDK transparently
+   * recovers from an expired JWT instead of surfacing the error. Anon-key
+   * requests (no session) are never retried: a 401 there is a real auth failure.
+   */
+  private wrapFetch(baseFetch: typeof fetch): typeof fetch {
+    const wrapped: typeof fetch = async (input, init) => {
+      const res = await baseFetch(input as RequestInfo, init);
+      if (res.status !== 401) return res;
+      const token = this.session?.access_token;
+      const sent = authHeader(input, init);
+      if (!token || sent !== `Bearer ${token}`) return res; // anon / non-user-token request
+      const ok = await this.autoRefresh();
+      const fresh = this.session?.access_token;
+      if (!ok || !fresh) return res; // refresh failed → surface the original 401
+      // Retry once with the refreshed token. fetch() consumed nothing of the
+      // request body we own (init.body is reusable; a Request input we rebuild).
+      const retryInit: RequestInit = { ...(init ?? {}) };
+      retryInit.headers = withAuth(input, init, `Bearer ${fresh}`);
+      const retryInput = input instanceof Request ? input.url : input;
+      return baseFetch(retryInput as RequestInfo, retryInit);
+    };
+    return wrapped;
+  }
+
+  /**
+   * Refresh the access token, sharing one in-flight refresh across concurrent
+   * 401 retries. Resolves true if a valid session is in place afterwards.
+   */
+  private autoRefresh(): Promise<boolean> {
+    if (this.refreshing) return this.refreshing;
+    const f = this.auth
+      .refresh()
+      .then((res) => !!res.data && !!this.session)
+      .catch(() => false)
+      .finally(() => {
+        if (this.refreshing === f) this.refreshing = null;
+      });
+    this.refreshing = f;
+    return f;
   }
 
   private cfg(key: string): IchibaseConfig {
@@ -268,6 +316,39 @@ export function createClient(url: string, anonKey: string, opts?: ClientOptions)
 function expiresAt(expiresIn: number | undefined): number | undefined {
   if (!expiresIn) return undefined;
   return Math.floor(Date.now() / 1000) + expiresIn;
+}
+
+const isRequest = (v: unknown): v is Request =>
+  typeof Request !== 'undefined' && v instanceof Request;
+
+/** Read a header (case-insensitively) from a HeadersInit. */
+function readHeader(h: HeadersInit | undefined, name: string): string | null {
+  if (!h) return null;
+  const lower = name.toLowerCase();
+  if (h instanceof Headers) return h.get(name);
+  if (Array.isArray(h)) {
+    for (const [k, v] of h) if (k.toLowerCase() === lower) return v;
+    return null;
+  }
+  for (const k of Object.keys(h)) if (k.toLowerCase() === lower) return h[k] ?? null;
+  return null;
+}
+
+/** The Authorization header a fetch call carries (from init, then a Request input). */
+function authHeader(input: RequestInfo | URL, init?: RequestInit): string | null {
+  const fromInit = readHeader(init?.headers, 'authorization');
+  if (fromInit != null) return fromInit;
+  if (isRequest(input)) return input.headers.get('Authorization');
+  return null;
+}
+
+/** Merge all header sources and force Authorization to `value` for the retry. */
+function withAuth(input: RequestInfo | URL, init: RequestInit | undefined, value: string): Headers {
+  const h = new Headers();
+  if (isRequest(input)) input.headers.forEach((v, k) => h.set(k, v));
+  if (init?.headers) new Headers(init.headers).forEach((v, k) => h.set(k, v));
+  h.set('Authorization', value);
+  return h;
 }
 
 function parseSession(raw: string): Session | null {

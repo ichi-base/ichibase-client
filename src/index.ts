@@ -9,8 +9,10 @@
 export { createClient, IchibaseClient } from './client.js';
 export type { ClientOptions, Session, AuthEvent } from './client.js';
 
-// Session persistence adapters.
-export { MemoryStorage } from './storage-adapter.js';
+// Session persistence. It's automatic — localStorage in the browser, in-memory
+// elsewhere — so you don't pass anything. These are exported for custom
+// adapters (e.g. AsyncStorage on React Native) / advanced use.
+export { MemoryStorage, defaultStorage } from './storage-adapter.js';
 export type { SessionStorage } from './storage-adapter.js';
 
 // Realtime.

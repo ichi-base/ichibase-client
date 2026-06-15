@@ -23,7 +23,7 @@ import {
   type UserProfile,
 } from './auth.js';
 import { RealtimeClient } from './realtime.js';
-import { MemoryStorage, type SessionStorage } from './storage-adapter.js';
+import { defaultStorage, type SessionStorage } from './storage-adapter.js';
 
 export interface Session {
   access_token: string;
@@ -159,7 +159,9 @@ export class IchibaseClient {
     this.url = url.replace(/\/$/, '');
     this.anonKey = anonKey;
     this.fetchFn = opts.fetch ?? globalThis.fetch.bind(globalThis);
-    this.sessionStore = opts.storage ?? new MemoryStorage();
+    // Persistence is automatic: localStorage in the browser, in-memory
+    // elsewhere. Pass `storage` to override (e.g. AsyncStorage on RN).
+    this.sessionStore = opts.storage ?? defaultStorage();
     this.storageKey = opts.storageKey ?? DEFAULT_STORAGE_KEY;
     this.wsImpl = opts.WebSocketImpl;
     this.auth = new SessionAuth(new Auth(this.url, this.anonKey, this.fetchFn), this);

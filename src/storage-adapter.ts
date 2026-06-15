@@ -9,7 +9,7 @@ export interface SessionStorage {
   removeItem(key: string): void | Promise<void>;
 }
 
-/** In-memory adapter (default) — session is lost on reload. */
+/** In-memory adapter — session is lost on reload. */
 export class MemoryStorage implements SessionStorage {
   private m = new Map<string, string>();
   getItem(key: string): string | null {
@@ -21,4 +21,27 @@ export class MemoryStorage implements SessionStorage {
   removeItem(key: string): void {
     this.m.delete(key);
   }
+}
+
+/**
+ * The adapter used when none is supplied: browser `localStorage` if it's
+ * present and usable (so a signed-in session survives a reload with zero
+ * setup), otherwise the in-memory fallback (Node / SSR / RN without a custom
+ * adapter). Pass `storage` in `ClientOptions` to override — e.g. AsyncStorage
+ * on React Native.
+ */
+export function defaultStorage(): SessionStorage {
+  try {
+    const ls = (globalThis as { localStorage?: SessionStorage }).localStorage;
+    if (ls && typeof ls.getItem === 'function') {
+      // Probe — access throws in Safari private mode / sandboxed frames.
+      const probe = '__ichibase_probe__';
+      ls.setItem(probe, '1');
+      ls.removeItem(probe);
+      return ls;
+    }
+  } catch {
+    /* fall through to in-memory */
+  }
+  return new MemoryStorage();
 }

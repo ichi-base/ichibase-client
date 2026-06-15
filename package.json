@@ -1,6 +1,6 @@
 {
   "name": "@ichibase/client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Official client-side SDK for ichibase — Postgres, Mongo, Auth, Storage & Realtime from the browser, React Native, Deno, Node & Bun. Anon key only.",
   "type": "module",
   "license": "MIT",

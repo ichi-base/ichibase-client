@@ -110,6 +110,44 @@ export class Auth {
     return this.call<{ sent: boolean }>('/verify-email/resend', { body: { email } });
   }
 
+  // ── Passwordless login (OTP + magic link) ────────────────────────
+  // Additive to email+password. The project must enable it (and configure
+  // custom SMTP) under Settings → Passwordless login. One email may carry
+  // an OTP code, a magic link, or both — whichever the project enabled.
+
+  /**
+   * Send the passwordless sign-in email. Always resolves successfully
+   * (202 `{ sent: true }`) even for unknown emails — it never reveals
+   * whether an account exists. A new email creates the account on first
+   * verify. Finish with `verifyOtp` (the typed code) or `verifyMagicLink`
+   * (the token from the tapped link).
+   */
+  signInWithOtp(input: { email: string }): Promise<Result<{ sent: boolean }>> {
+    return this.call<{ sent: boolean }>('/login/passwordless/request', {
+      body: { email: input.email },
+    });
+  }
+
+  /**
+   * Verify a passwordless OTP code and sign the user in. Returns the same
+   * token pair as `login`. Codes are single-use and expire; repeated
+   * failures surface as `invalid_code` / `too_many_attempts`.
+   */
+  verifyOtp(input: { email: string; code: string }): Promise<Result<LoginResult>> {
+    return this.call<LoginResult>('/login/passwordless/verify', {
+      body: { email: input.email, code: input.code },
+    });
+  }
+
+  /**
+   * Redeem a magic-link token and sign the user in. Pass the `token`
+   * query-param from the magic URL the user tapped. Returns the same
+   * token pair as `login`.
+   */
+  verifyMagicLink(token: string): Promise<Result<LoginResult>> {
+    return this.call<LoginResult>('/login/magic', { body: { token } });
+  }
+
   // ── Phase 2 (v0.3.x) — bearer-authed profile + session mgmt ──────
 
   /**

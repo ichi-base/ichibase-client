@@ -60,6 +60,24 @@ ichi.onAuthStateChange((event, session) => {
 });
 ```
 
+#### Passwordless sign-in (OTP & magic link)
+
+If the project enables it (custom SMTP required), users can sign in without a
+password — a one-time code, a magic link, or both in one email. This is
+additive: email + password keeps working too.
+
+```ts
+// 1. Send the sign-in email (always succeeds, even for unknown emails)
+await ichi.auth.signInWithOtp({ email });
+
+// 2a. User typed the 6-digit code → signs them in (session is set):
+await ichi.auth.verifyOtp({ email, code });
+
+// 2b. …or your magic-link landing page exchanges the token from the URL:
+const token = new URL(location.href).searchParams.get('token');
+await ichi.auth.verifyMagicLink(token!);
+```
+
 #### Persisting the session
 
 The session lives in memory by default. Pass a storage adapter to keep users

@@ -123,6 +123,40 @@ class SessionAuth {
     return this.inner.resendVerification(email);
   }
 
+  // ── Passwordless login (OTP + magic link) ────────────────────────
+  // signInWithOtp just sends the email — no session yet. The two verify
+  // calls return a token pair, so they sign the user in here, exactly
+  // like `login`.
+
+  signInWithOtp(input: { email: string }): Promise<Result<{ sent: boolean }>> {
+    return this.inner.signInWithOtp(input);
+  }
+
+  async verifyOtp(input: { email: string; code: string }): Promise<Result<LoginResult>> {
+    const res = await this.inner.verifyOtp(input);
+    if (res.data) await this.applyLoginResult(res.data);
+    return res;
+  }
+
+  async verifyMagicLink(token: string): Promise<Result<LoginResult>> {
+    const res = await this.inner.verifyMagicLink(token);
+    if (res.data) await this.applyLoginResult(res.data);
+    return res;
+  }
+
+  /** Persist a login token pair as the active session. */
+  private async applyLoginResult(data: LoginResult): Promise<void> {
+    await this.client._setSession(
+      {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: expiresAt(data.expires_in),
+        user: data.user,
+      },
+      'SIGNED_IN',
+    );
+  }
+
   /** Hydrate the session from the storage adapter (call once at startup for async adapters). */
   async loadSession(): Promise<Session | null> {
     return this.client._loadSession();

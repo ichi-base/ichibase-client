@@ -1,6 +1,6 @@
 {
   "name": "@ichibase/client",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "Official client-side SDK for ichibase — Postgres, Mongo, Auth, Storage & Realtime from the browser, React Native, Deno, Node & Bun. Anon key only.",
   "type": "module",
   "license": "MIT",
@@ -30,6 +30,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./ssr": {
+      "types": "./dist/ssr.d.ts",
+      "import": "./dist/ssr.js",
+      "require": "./dist/ssr.cjs"
     }
   },
   "files": [

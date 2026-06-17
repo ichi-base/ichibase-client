@@ -111,6 +111,52 @@ const ichi = createClient(url, anonKey, { storage: SecureStoreAdapter });
 await ichi.auth.loadSession();
 ```
 
+#### Server-side rendering (Next.js / SSR)
+
+For SSR the session must live in a **cookie** (a server can't read
+`localStorage`). Import from `@ichibase/client/ssr` — two factories modeled on
+Supabase's `@supabase/ssr`, sharing one cookie (`ichibase.session`) so a Server
+Component and a Client Component see the same session at once (pick **per
+context, not per app**):
+
+- **`createBrowserClient(url, anonKey)`** — Client Components (`"use client"`).
+  A singleton that reads/writes the cookie via `document.cookie` and refreshes an
+  expired token itself.
+- **`createServerClient(url, anonKey, { cookies })`** — Server Components, Server
+  Actions, Route Handlers, middleware. Created per request; you hand it your
+  framework's cookie store.
+
+```ts
+// lib/ichibase/client.ts — Client Components
+import { createBrowserClient } from '@ichibase/client/ssr';
+export const createClient = () => createBrowserClient(URL, ANON_KEY);
+
+// lib/ichibase/server.ts — Server Components / Actions / Route Handlers
+import { cookies } from 'next/headers';
+import { createServerClient } from '@ichibase/client/ssr';
+
+export async function createClient() {
+  const store = await cookies();
+  return createServerClient(URL, ANON_KEY, {
+    cookies: {
+      getAll: () => store.getAll(),
+      setAll: (list) =>
+        list.forEach(({ name, value, options }) => store.set(name, value, options)),
+    },
+  });
+}
+```
+
+Server Components can't write cookies, so run **middleware** to keep the token
+fresh and gate protected routes — it calls `ichi.auth.refresh()` when the token
+is near expiry, then `ichi.auth.getUser()`. A complete runnable app is in
+[`examples/nextjs`](./examples/nextjs); full walkthrough in the
+[Auth docs → Client-side vs server-side (SSR)](https://ichibase.com/docs/auth).
+
+> The session cookie is **not httpOnly** (the browser client must read it to
+> refresh itself). Your short-lived access token plus your RLS / Mongo / realtime
+> rules are the real gate.
+
 ### Storage
 
 Storage is **not** on the client. Read/upload tokens are minted server-side by

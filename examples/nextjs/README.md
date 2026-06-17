@@ -47,6 +47,20 @@ NEXT_PUBLIC_ICHIBASE_ANON_KEY=ich_pub_...
 
 > Re-run `npm run build` in the SDK repo whenever you change the SDK source.
 
+### Allow your origin (CORS) — required for client-side calls
+
+ichibase's data plane is **default-deny CORS** per project. **Server-side** calls (Server
+Components, Server Actions, middleware — including login/signup/logout here) are server-to-server
+and unaffected. But **client-side** calls from the browser (the `/notes` page, realtime) will be
+blocked until you add your app's origin to the project's **Allowed origins** (CORS settings) in the
+dashboard — exactly like adding your site URL in Supabase:
+
+- dev: `http://localhost:3000`
+- prod: your deployed origin (e.g. `https://app.example.com`)
+
+Without this you'll see `Failed to fetch` in the browser for client-side data/realtime, while
+auth and the server-rendered pages still work.
+
 ## Database for the `/notes` + `/account` demo (optional)
 
 Auth works without any tables. To see the data + realtime + RLS demo, create a `notes` table with

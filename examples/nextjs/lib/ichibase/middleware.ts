@@ -36,9 +36,20 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     },
   );
 
-  // IMPORTANT: do not run code between createServerClient and getUser() — an
-  // expired token is refreshed here, and the refreshed cookies must land on
-  // `response`.
+  // Proactively refresh the access token when it's expired or about to expire.
+  // (Auth calls like getUser() use the raw fetch and do NOT auto-refresh — only
+  // data calls do — so the middleware must refresh explicitly.) The refreshed
+  // session is written back through setAll above, so the fresh cookie lands on
+  // `response` and the browser + Server Components see it.
+  const session = ichi.getSession();
+  if (session?.refresh_token) {
+    const expiresInMs = (session.expires_at ?? 0) * 1000 - Date.now();
+    if (expiresInMs < 60_000) {
+      await ichi.auth.refresh();
+    }
+  }
+
+  // Validate the (now-fresh) token + get the user. Null → not signed in.
   const user = await ichi.auth.getUser();
 
   const path = request.nextUrl.pathname;

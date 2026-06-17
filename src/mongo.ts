@@ -12,6 +12,13 @@ import {
   urlJoin,
 } from './core.js';
 
+/** Result of `find` / `aggregate` — the gateway wraps docs with a count. */
+export interface MongoFindResult {
+  docs: Record<string, unknown>[];
+  count: number;
+  truncated: boolean;
+}
+
 /** Per-collection client. */
 export class MongoCollection {
   constructor(
@@ -63,12 +70,12 @@ export class MongoCollection {
       limit?: number;
       skip?: number;
     } = {},
-  ): Promise<Result<Record<string, unknown>[]>> {
-    return this.op<Record<string, unknown>[]>('find', { filter, ...opts });
+  ): Promise<Result<MongoFindResult>> {
+    return this.op<MongoFindResult>('find', { filter, ...opts });
   }
 
-  findOne(filter: Record<string, unknown> = {}): Promise<Result<Record<string, unknown> | null>> {
-    return this.op<Record<string, unknown> | null>('findOne', { filter });
+  findOne(filter: Record<string, unknown> = {}): Promise<Result<{ doc: Record<string, unknown> | null }>> {
+    return this.op<{ doc: Record<string, unknown> | null }>('findOne', { filter });
   }
 
   insertOne(
@@ -128,8 +135,8 @@ export class MongoCollection {
     return this.op<{ count: number }>('count', { filter });
   }
 
-  aggregate(pipeline: Record<string, unknown>[]): Promise<Result<Record<string, unknown>[]>> {
-    return this.op<Record<string, unknown>[]>('aggregate', { pipeline });
+  aggregate(pipeline: Record<string, unknown>[]): Promise<Result<MongoFindResult>> {
+    return this.op<MongoFindResult>('aggregate', { pipeline });
   }
 
   // ── Phase 2 (v0.3.x) operations ────────────────────────────────

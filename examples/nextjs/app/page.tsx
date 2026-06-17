@@ -32,11 +32,19 @@ export default async function Home() {
         <ul className="list">
           <li>
             <Link href="/account">/account</Link> — a protected <strong>Server Component</strong>{' '}
-            that reads the user + their rows server-side (RLS applies as the user).
+            that reads your user server-side from the session cookie.
           </li>
           <li>
-            <Link href="/notes">/notes</Link> — a <strong>Client Component</strong> reading/writing
-            data + a realtime subscription, using the browser client.
+            <Link href="/mongo">/mongo</Link> — <strong>Client Component</strong>: collection CRUD
+            via the browser client (<code>ichi.mongo</code>).
+          </li>
+          <li>
+            <Link href="/postgres">/postgres</Link> — <strong>Client Component</strong>: table CRUD
+            via PostgREST (<code>ichi.from</code>).
+          </li>
+          <li>
+            <Link href="/realtime">/realtime</Link> — <strong>Client Component</strong>: live change
+            events over a WebSocket.
           </li>
           <li>
             Let the access token expire while you browse — the middleware refreshes it

@@ -7,7 +7,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@ichibase/client/ssr';
 
-const PROTECTED = ['/account', '/notes'];
+const PROTECTED = ['/account', '/mongo', '/postgres', '/realtime'];
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request });

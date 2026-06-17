@@ -45,6 +45,7 @@ export type {
   SessionInfo,
 } from './auth.js';
 export { Mongo, MongoCollection } from './mongo.js';
+export type { MongoFindResult, BulkWriteOp } from './mongo.js';
 export { Functions } from './functions.js';
 export type { InvokeOptions } from './functions.js';
 

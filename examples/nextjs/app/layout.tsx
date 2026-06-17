@@ -21,7 +21,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Link href="/" className="brand">
             ichibase
           </Link>
-          <Link href="/notes">Notes</Link>
+          <Link href="/mongo">Mongo</Link>
+          <Link href="/postgres">Postgres</Link>
+          <Link href="/realtime">Realtime</Link>
           <Link href="/account">Account</Link>
           <span className="spacer" />
           {user ? (

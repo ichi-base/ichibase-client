@@ -61,10 +61,23 @@ dashboard — exactly like adding your site URL in Supabase:
 Without this you'll see `Failed to fetch` in the browser for client-side data/realtime, while
 auth and the server-rendered pages still work.
 
-## Database for the `/notes` + `/account` demo (optional)
+## Pages
 
-Auth works without any tables. To see the data + realtime + RLS demo, create a `notes` table with
-row-level security so each user only sees their own rows. In your project's SQL editor:
+Each data API has its own **Client Component** page (uses the browser client), plus a protected
+server page:
+
+| Page | What it shows |
+|---|---|
+| `/account` | Protected **Server Component** — reads your user server-side from the session cookie. |
+| `/mongo` | Mongo collection CRUD via `ichi.mongo.collection(name)`. Default collection `orders`. |
+| `/postgres` | Postgres table CRUD via `ichi.from(table)` (PostgREST). Default table `notes`. |
+| `/realtime` | Subscribe to a Mongo collection or Postgres table; live change events over a WebSocket. |
+
+Auth (login/signup/logout) works with **no tables** — it runs through Server Actions. The data
+pages need the matching backend on your project (a Mongo collection / a Postgres table) and your
+app origin in the CORS allowlist (above).
+
+### Optional: a Postgres `notes` table for `/postgres`
 
 ```sql
 create table public.notes (
@@ -82,15 +95,16 @@ create policy "own notes" on public.notes
   with check (user_id = auth.uid());
 ```
 
-Then enable **realtime** on `public.notes` in the dashboard so `/notes` updates live.
+Enable **realtime** on the table/collection in the dashboard so `/realtime` shows events.
 
 ## What to try
 
 1. **Sign up** (`/signup`) → **sign in** (`/login`). If the project enforces 2-step verification,
    the login form switches to a code step automatically.
-2. Visit **`/account`** — a protected Server Component that reads the user + your notes **on the
-   server** (RLS scopes to you).
-3. Visit **`/notes`** — add notes from the **browser** client; the list updates over realtime.
-4. Leave the tab open until the access token expires, then navigate — the **middleware refreshes**
+2. **`/account`** — a protected Server Component that reads your user **on the server**.
+3. **`/mongo`** / **`/postgres`** — insert + list + delete from the **browser** client (scoped to
+   you by your policies / RLS).
+4. **`/realtime`** — subscribe, then insert on `/mongo` and watch the event arrive.
+5. Leave the tab open until the access token expires, then navigate — the **middleware refreshes**
    it transparently (you stay signed in; the cookie is rewritten).
-5. **Sign out** (top-right) clears the cookie.
+6. **Sign out** (top-right) clears the cookie.

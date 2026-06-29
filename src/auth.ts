@@ -186,6 +186,33 @@ export class Auth {
     return this.call<LoginResult>('/login/magic', { body: { token } });
   }
 
+  // ── Phone (SMS) OTP login (paid plans) ───────────────────────────
+  // The project owner enables phone login + an SMS delivery webhook in the
+  // dashboard. Phone is a standalone identity (no email required).
+
+  /**
+   * Send a one-time login code to a phone number by SMS. `phone` must be in
+   * E.164 format, e.g. `+14155551234`. A new number creates the account on
+   * first verify. Finish with `verifyPhoneOtp`. Subject to per-IP / per-phone /
+   * daily / monthly rate limits configured by the project owner.
+   */
+  signInWithPhone(input: { phone: string }): Promise<Result<{ sent: boolean }>> {
+    return this.call<{ sent: boolean }>('/login/phone/request', {
+      body: { phone: input.phone },
+    });
+  }
+
+  /**
+   * Verify a phone OTP code and sign the user in. Returns the same token pair
+   * as `login`. Codes are single-use and expire; repeated failures surface as
+   * `invalid_code` / `too_many_attempts`.
+   */
+  verifyPhoneOtp(input: { phone: string; code: string }): Promise<Result<LoginResult>> {
+    return this.call<LoginResult>('/login/phone/verify', {
+      body: { phone: input.phone, code: input.code },
+    });
+  }
+
   // ── 2-step verification (second factor after a password login) ────
   // Call after `login` returns a TwoFactorChallenge. Returns the session.
 
